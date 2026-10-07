@@ -345,13 +345,12 @@ else:
         st.markdown(f"<div class='cap'>💡 {cap['q9']}</div>", unsafe_allow_html=True)
     with c10, st.container(border=True):
         m = t["Q10 Heatmap"]
-        # Dark cells need white numbers, light cells need dark numbers
-        cutoff = m.values.max() * 0.45 if m.values.sum() else 0
-        cell_colors = [["#FFFFFF" if v > cutoff else "#0F2A47" for v in row] for row in m.values]
+        # NOTE: plotly heatmap textfont.color accepts only a single color, so the
+        # colorscale stays light enough for dark-navy numbers on every cell.
         fig = go.Figure(go.Heatmap(z=m.values, x=list(m.columns), y=[str(i) for i in m.index],
-                                   colorscale=["#FFF7E6", "#FDBA74", "#EF4444", "#7F1D1D"], showscale=False,
+                                   colorscale=["#FFF7E6", "#FED7AA", "#FDBA74", "#F97316"], showscale=False,
                                    text=m.values, texttemplate="%{text:,}",
-                                   textfont=dict(size=10, color=cell_colors),
+                                   textfont=dict(size=10, color="#0F2A47"),
                                    hovertemplate="%{y} %{x}: %{z:,.0f}<extra></extra>", xgap=2, ygap=2))
         fig.update_yaxes(autorange="reversed", gridcolor="rgba(0,0,0,0)")  # Monday on top
         st.plotly_chart(style(fig, "Q10 · Day × Time of Day Heat Map"), width="stretch")
