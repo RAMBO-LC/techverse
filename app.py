@@ -237,7 +237,7 @@ with st.sidebar:
                                placeholder="All districts", key="f_districts")
     cats = st.multiselect("Crime Category", ["Violent", "Property", "Other"],
                           placeholder="All categories", key="f_cats")
-    years = st.slider("Year", ymin, ymax, key="f_years")
+    years = st.slider("Year", ymin, ymax, value=(ymin, ymax), key="f_years")
     arrest = st.radio("Arrest", ["All", "Arrest made", "No arrest"], horizontal=True, key="f_arrest")
     domestic = st.radio("Domestic", ["All", "Domestic", "Not domestic"], horizontal=True, key="f_domestic")
     st.button("↺ Reset filters", on_click=reset_filters, width="stretch")
