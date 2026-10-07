@@ -117,11 +117,92 @@ def donut(s, title, colors=None):
 # --------------------------------------------------------------------------
 st.markdown("""
 <style>
- .block-container {padding-top: 1.2rem; padding-bottom: 1rem;}
- [data-testid="stMetric"] {background:#fff; border:1px solid #D0D5DB; border-radius:8px; padding:8px 12px;}
- [data-testid="stMetricValue"] {color:#1F4E79; font-size:1.7rem;}
- [data-testid="stMetricLabel"] p {font-size:0.8rem; color:#7F7F7F;}
-</style>""", unsafe_allow_html=True)
+    .block-container {
+        padding-top: 1.2rem;
+        padding-bottom: 1rem;
+    }
+
+    /* KPI cards */
+    [data-testid="stMetric"] {
+        background: #FFFFFF;
+        border: 1px solid #D0D5DB;
+        border-radius: 8px;
+        padding: 8px 12px;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #1F4E79;
+        font-size: 1.7rem;
+    }
+
+    [data-testid="stMetricLabel"] p {
+        font-size: 0.8rem;
+        color: #4B5563;
+    }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #F8FAFC;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #1F2937;
+    }
+
+    /* Sidebar headings */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        color: #1F4E79;
+    }
+
+    /* Input labels */
+    [data-testid="stSidebar"] label {
+        color: #1F2937 !important;
+        font-weight: 600;
+    }
+
+    /* Multiselect selected values */
+    [data-testid="stSidebar"] [data-baseweb="tag"] {
+        background-color: #E8EEF5 !important;
+    }
+
+    [data-testid="stSidebar"] [data-baseweb="tag"] span {
+        color: #1F2937 !important;
+    }
+
+    /* Multiselect placeholder */
+    [data-testid="stSidebar"] [data-baseweb="select"] input::placeholder {
+        color: #6B7280 !important;
+        opacity: 1 !important;
+    }
+
+    /* Select / multiselect text */
+    [data-testid="stSidebar"] [data-baseweb="select"] {
+        color: #1F2937 !important;
+    }
+
+    [data-testid="stSidebar"] [data-baseweb="select"] * {
+        color: #1F2937;
+    }
+
+    /* Radio buttons */
+    [data-testid="stSidebar"] [role="radiogroup"] label {
+        color: #1F2937 !important;
+    }
+
+    /* Slider text */
+    [data-testid="stSidebar"] [data-testid="stSlider"] {
+        color: #1F2937 !important;
+    }
+
+    /* Sidebar caption / helper text */
+    [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] small {
+        color: #6B7280 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("<h1 style='text-align:center;color:#1F4E79;margin:0'>Chicago Crimes Dashboard</h1>",
             unsafe_allow_html=True)
