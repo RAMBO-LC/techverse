@@ -71,7 +71,14 @@ def get_results(path, types, districts, cats, years, arrest, domestic):
     sub = df[m]
     if sub.empty:
         return None, None
-    return ca.compute(sub)
+    k, t = ca.compute(sub)
+    # Q1 spans the full selected range (ca.compute covers only Apr 2015-Jul 2017,
+    # which stays as-is for the analysis script's handout KPIs). Missing months
+    # are filled with 0 so the line stays continuous under narrow filters.
+    q1 = sub.groupby("Month Start").size().rename("Crimes")
+    full_idx = pd.date_range(q1.index.min(), q1.index.max(), freq="MS")
+    t["Q1 Monthly"] = q1.reindex(full_idx, fill_value=0)
+    return k, t
 
 
 # ------------------------------------------------------------------ charts
@@ -131,7 +138,7 @@ def captions(t, n):
     c = {}
     q1 = t["Q1 Monthly"]
     c["q1"] = (f"Peak {month_label(q1.idxmax())} ({q1.max():,}) · low {month_label(q1.idxmin())} ({q1.min():,})"
-               if len(q1) else "No data in Apr 2015 - Jul 2017 for this selection.")
+               if len(q1) else "No data for this selection.")
     q2 = t["Q2 Weekday"]
     c["q2"] = f"{q2.idxmax()} is busiest ({q2.max():,})" if q2.sum() else "No data."
     q3 = t["Q3 TimeOfDay"]
@@ -234,7 +241,7 @@ with st.sidebar:
     arrest = st.radio("Arrest", ["All", "Arrest made", "No arrest"], horizontal=True, key="f_arrest")
     domestic = st.radio("Domestic", ["All", "Domestic", "Not domestic"], horizontal=True, key="f_domestic")
     st.button("↺ Reset filters", on_click=reset_filters, width="stretch")
-    st.caption("Filters apply to every KPI and chart. Fixed-period items (K5 = 2016, Q1 and K6 = "
+    st.caption("Filters apply to every KPI and chart. Fixed-period items (K5 = 2016, K6 = "
                "Apr 2015-Jul 2017, Q4 = 2016) stay inside their period and combine with the Year slider.")
 
 # ---- results for the current selection
@@ -282,7 +289,7 @@ else:
     with c1, st.container(border=True):
         q1 = t["Q1 Monthly"]
         if q1.empty:
-            st.info("Q1: no data in Apr 2015 - Jul 2017 for this selection.")
+            st.info("Q1: no data for this selection.")
         else:
             fig = go.Figure(go.Scatter(x=q1.index, y=q1.values, mode="lines+markers",
                                        line=dict(color=BLUE, width=3), marker=dict(size=6, color=BLUE),
@@ -291,10 +298,11 @@ else:
                                      marker=dict(color=AMBER, size=12), textposition=["top center", "bottom center"],
                                      text=[f"{q1.max():,}", f"{q1.min():,}"], textfont=dict(color="#0F2A47", size=11),
                                      hoverinfo="skip"))
-            fig.update_xaxes(tickformat="%b %y", dtick="M3")
+            dtick = "M12" if len(q1) > 60 else "M6" if len(q1) > 28 else "M3"
+            fig.update_xaxes(tickformat="%b %y", dtick=dtick)
             fig.update_yaxes(range=[q1.min() * 0.9, q1.max() * 1.07])
-            st.plotly_chart(style(fig, "Q1 · Monthly Crime Count (Apr 2015 - Jul 2017)", "Month", "Number of crimes"),
-                            width="stretch")
+            st.plotly_chart(style(fig, f"Q1 · Monthly Crime Count ({q1.index.min():%b %Y} – {q1.index.max():%b %Y})",
+                                  "Month", "Number of crimes"), width="stretch")
         st.markdown(f"<div class='cap'>💡 {cap['q1']}</div>", unsafe_allow_html=True)
     with c2, st.container(border=True):
         st.plotly_chart(col_chart(t["Q2 Weekday"], "Q2 · Crimes by Day of Week", "Day", "Crimes"), width="stretch")
