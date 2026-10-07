@@ -1,0 +1,10 @@
+Q1: Monthly crimes range from 18,710 (Feb 2016) to 24,818 (Aug 2016); summer peaks and a February dip repeat each year.
+Q2: Friday is the busiest day (155,618) and Sunday the quietest (145,562).
+Q3: Afternoon has the most crimes (31.3%); Night has the fewest (17.7%).
+Q4: In 2016, Summer is highest (73,610) and Winter lowest (59,764). Seasons are assigned by month only, so Dec 2016 counts as Winter 2016.
+Q5: Violent 29.2%, Property 43.3%, Other 27.6%.
+Q6: Arrest rate is highest at Evening (24.6%) and lowest at Night (16.2%).
+Q7: THEFT is the top crime type (236,314); the top 3 (THEFT, BATTERY, CRIMINAL DAMAGE) make up 50.9% of all crimes.
+Q8: Domestic crime is led by BATTERY (100,250); OTHER OFFENSE is second (24,910).
+Q9: District 11 has the most crimes (69,214). Among the top 10, arrest rate is highest in district 11 (38.3%) and lowest in district 12 (14.1%).
+Q10: The busiest cell is Friday Afternoon (49,679); the quietest is Tuesday Night (22,265).
