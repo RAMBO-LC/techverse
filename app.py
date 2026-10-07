@@ -1,6 +1,6 @@
 """
-Chicago Crime Explorer - gamified, single-page Streamlit dashboard
-==================================================================
+Chicago Crime Explorer - single-page Streamlit dashboard
+=========================================================
 SETUP (once)
     pip install -r requirements.txt
     (the cleaned data file analysis_output/crimes_clean.csv.gz is included;
@@ -15,7 +15,6 @@ calculation functions, so the numbers always match the analysis script.
 The .streamlit/config.toml file sets the colour theme.
 """
 import os
-import random
 import sys
 
 import pandas as pd
@@ -24,17 +23,14 @@ import streamlit as st
 
 import crime_analysis as ca
 
-st.set_page_config(page_title="Chicago Crime Explorer", page_icon="🕵️", layout="wide")
+st.set_page_config(page_title="Chicago Crime Explorer", page_icon="📊", layout="wide")
 
 # ------------------------------------------------------------------ palette
 NAVY, BLUE, SKY = "#0F2A47", "#2F6FDE", "#B8CCEB"
 TEAL, TEAL_L = "#14B8A6", "#B6E3DC"
-AMBER, RED, RED_L, GREY = "#F59E0B", "#EF4444", "#F5B5B5", "#94A3B8"
+AMBER, RED, RED_L, GREY = "#F59E0B", "#EF4444", "#F5B5B5", "#64748B"
 CAT_COL = {"Violent": RED, "Property": BLUE, "Other": GREY}
 H = 310
-LEVELS = [(0, "Rookie", "🔰"), (100, "Officer", "👮"), (250, "Detective", "🕵️"),
-          (450, "Inspector", "🔎"), (700, "Chief", "🎖️"), (950, "Commissioner", "👑")]
-FILTER_NAMES = ["Primary Type", "District", "Crime Category", "Year", "Arrest", "Domestic"]
 
 
 # ------------------------------------------------------------------ data
@@ -78,52 +74,12 @@ def get_results(path, types, districts, cats, years, arrest, domestic):
     return ca.compute(sub)
 
 
-# ------------------------------------------------------------------ game state
-def init_state():
-    S = st.session_state
-    defaults = dict(xp=0, explored=set(), announced=set(), toasts=[], qi=0, answers={},
-                    streak=0, best_streak=0, total_correct=0, awarded=set(), run=0,
-                    finished=False, perfect=False, celebrated=False)
-    for k, v in defaults.items():
-        if k not in S:
-            S[k] = v
-
-
-def level_of(xp):
-    idx = max(i for i, (th, _, _) in enumerate(LEVELS) if xp >= th)
-    return idx
-
-
-def add_xp(n, why):
-    S = st.session_state
-    before = level_of(S.xp)
-    S.xp += n
-    S.toasts.append(f"+{n} XP · {why}")
-    after = level_of(S.xp)
-    if after > before:
-        S.toasts.append(f"🎉 LEVEL UP! You are now a {LEVELS[after][2]} {LEVELS[after][1]}")
-
-
-def badge_defs(n_questions):
-    S = st.session_state
-    return [
-        ("🕵️", "Rookie Detective", "Use your first filter", len(S.explored) >= 1),
-        ("🧭", "Explorer", "Use 4 different filters", len(S.explored) >= 4),
-        ("🔬", "Filter Master", "Use all 6 filters", len(S.explored) >= 6),
-        ("🎯", "First Case Solved", "Answer a case correctly", S.total_correct >= 1),
-        ("🔥", "Hot Streak", "3 correct answers in a row", S.best_streak >= 3),
-        ("🧠", "Sharp Mind", "Solve 5 cases", S.total_correct >= 5),
-        ("🏆", "Case Closed", "Finish every case", S.finished),
-        ("💎", "Flawless", "Solve every case correctly", S.perfect),
-    ]
-
-
 # ------------------------------------------------------------------ charts
 def style(fig, title, xt=None, yt=None, h=H):
     fig.update_layout(
         title=dict(text=f"<b>{title}</b>", x=0, font=dict(size=14, color=NAVY)),
         height=h, margin=dict(l=8, r=8, t=44, b=8), xaxis_title=xt, yaxis_title=yt,
-        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", showlegend=False,
+        plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", showlegend=False,
         font=dict(size=11, color="#334155"), hoverlabel=dict(bgcolor=NAVY, font_color="white"))
     fig.update_yaxes(gridcolor="#E8EDF5", zeroline=False)
     fig.update_xaxes(showgrid=False)
@@ -136,7 +92,7 @@ def col_chart(s, title, xt, yt, accent=BLUE, muted=SKY, pct=False):
     colors = [accent if (v == mx and mx > 0) else muted for v in s.values]
     fig = go.Figure(go.Bar(x=s.index.astype(str), y=s.values, marker_color=colors,
                            text=s.values, texttemplate="%{text:" + (".1f" if pct else ",.0f") + "}",
-                           textposition="outside", cliponaxis=False,
+                           textposition="outside", cliponaxis=False, textfont=dict(color="#0F2A47", size=11),
                            hovertemplate="%{x}: %{y:,.1f}<extra></extra>" if pct else "%{x}: %{y:,.0f}<extra></extra>"))
     if pct:
         fig.update_yaxes(ticksuffix="%")
@@ -149,7 +105,7 @@ def hbar(s, title, xt, accent=BLUE, muted=SKY):
     colors = [muted] * (len(s) - 1) + [accent]
     fig = go.Figure(go.Bar(x=s.values, y=[str(i).title() for i in s.index], orientation="h",
                            marker_color=colors, text=s.values, texttemplate="%{text:,.0f}",
-                           textposition="outside", cliponaxis=False,
+                           textposition="outside", cliponaxis=False, textfont=dict(color="#0F2A47", size=11),
                            hovertemplate="%{y}: %{x:,.0f}<extra></extra>"))
     fig.update_xaxes(gridcolor="#E8EDF5", range=[0, (s.max() if len(s) else 1) * 1.4])
     fig.update_yaxes(gridcolor="rgba(0,0,0,0)")
@@ -159,7 +115,8 @@ def hbar(s, title, xt, accent=BLUE, muted=SKY):
 def donut(s, title, colors):
     fig = go.Figure(go.Pie(labels=list(s.index), values=s.values, hole=0.62, sort=False,
                            marker=dict(colors=colors, line=dict(color="white", width=2)),
-                           textinfo="label+percent", hovertemplate="%{label}: %{value:,.0f}<extra></extra>"))
+                           textinfo="label+percent", textfont=dict(color="white", size=12),
+                           hovertemplate="%{label}: %{value:,.0f}<extra></extra>"))
     fig.add_annotation(text=f"<b>{s.sum():,.0f}</b><br><span style='font-size:10px'>crimes</span>",
                        showarrow=False, font=dict(size=15, color=NAVY))
     return style(fig, title)
@@ -205,148 +162,6 @@ def captions(t, n):
     return c
 
 
-# ------------------------------------------------------------------ quiz
-def build_questions(tb, kb):
-    """Questions use the FULL dataset (unaffected by filters)."""
-    Q = []
-
-    def add(text, options, answer, why, seed):
-        opts = list(options)
-        random.Random(seed).shuffle(opts)
-        Q.append(dict(q=text, options=opts, answer=answer, why=why))
-
-    days = ca.DAYS
-    wk = tb["Q2 Weekday"]
-    a = wk.idxmax()
-    rng = random.Random(1)
-    add("Which day of the week has the MOST recorded crimes?",
-        [a] + rng.sample([d for d in days if d != a], 3), a,
-        f"{a} wins with {wk.max():,} crimes, versus {wk.min():,} on {wk.idxmin()}.", 11)
-
-    q6 = tb["Q6 ArrestByTOD"]
-    a = q6.idxmax()
-    add("At which time of day is a crime MOST likely to end in an arrest?",
-        ca.TOD, a, f"{a}: {q6.max():.1f}% of crimes lead to arrest, versus {q6.min():.1f}% at {q6.idxmin()}.", 12)
-
-    q8 = tb["Q8 Top5Domestic"]
-    a = q8.index[0].title()
-    add("What is the most common TYPE of domestic crime?",
-        [i.title() for i in q8.index[:4]], a,
-        f"{a} accounts for {q8.iloc[0]:,} domestic crimes, about {q8.iloc[0]/q8.iloc[1]:.0f}x the next type.", 13)
-
-    q4 = tb["Q4 Season2016"]
-    a = q4.idxmax()
-    add("Which season of 2016 had the most crimes?", ["Winter", "Spring", "Summer", "Fall"], a,
-        f"{a} 2016 had {q4.max():,} crimes; Winter had the fewest at {q4.min():,}.", 14)
-
-    v = kb["K8 Violent crime %"]
-    choices = [10, 20, 30, 45]
-    best = min(choices, key=lambda x: abs(x - v))
-    add("Roughly what share of ALL crimes are violent (assault, battery, robbery, ...)?",
-        [f"About {x}%" for x in choices], f"About {best}%",
-        f"Violent crimes make up {v:.1f}% of all recorded crimes.", 15)
-
-    q9 = tb["Q9 Top10Districts"]
-    a = q9["Arrest rate %"].idxmax()
-    rng = random.Random(2)
-    others = [d for d in q9.index if d != a]
-    add("Among the 10 busiest districts, which has the HIGHEST arrest rate?",
-        [f"District {a}"] + [f"District {d}" for d in rng.sample(others, 3)], f"District {a}",
-        f"District {a} arrests in {q9['Arrest rate %'].max():.1f}% of crimes; the lowest is "
-        f"district {q9['Arrest rate %'].idxmin()} at {q9['Arrest rate %'].min():.1f}%.", 16)
-
-    m = tb["Q10 Heatmap"].stack().sort_values(ascending=False)
-    top = m.index[0]
-    rng = random.Random(3)
-    alts = rng.sample(list(m.index[1:10]), 3)
-    lab = lambda ix: f"{ix[0]} {ix[1]}"
-    add("Which day and time slot is the BUSIEST for crime?", [lab(top)] + [lab(i) for i in alts], lab(top),
-        f"{lab(top)} peaks at {m.iloc[0]:,} crimes; the quietest slot is {lab(m.index[-1])} ({m.iloc[-1]:,}).", 17)
-
-    q1 = tb["Q1 Monthly"]
-    a = q1.idxmin()
-    rng = random.Random(4)
-    alts = rng.sample([i for i in q1.nsmallest(8).index if i != a], 3)
-    add("Between Apr 2015 and Jul 2017, which month had the FEWEST crimes?",
-        [f"{a:%B %Y}"] + [f"{i:%B %Y}" for i in alts], f"{a:%B %Y}",
-        f"{a:%B %Y} had only {q1.min():,} crimes (a short month) versus a peak of {q1.max():,} in {q1.idxmax():%B %Y}.", 18)
-    return Q
-
-
-def lock_answer(i, q):
-    S = st.session_state
-    choice = S.get(f"opt_{S.run}_{i}")
-    if choice is None:
-        S.toasts.append("Pick an answer first 🙂")
-        return
-    ok = choice == q["answer"]
-    S.answers[i] = dict(choice=choice, ok=ok)
-    if ok:
-        S.streak += 1
-        S.best_streak = max(S.best_streak, S.streak)
-        if i not in S.awarded:
-            S.awarded.add(i)
-            S.total_correct += 1
-            bonus = 25 if S.streak >= 3 else 0
-            add_xp(100 + bonus, "Case solved" + (" + streak bonus" if bonus else ""))
-    else:
-        S.streak = 0
-
-
-def next_case(n):
-    S = st.session_state
-    S.qi += 1
-    if S.qi >= n:
-        S.finished = True
-        if all(a["ok"] for a in S.answers.values()) and len(S.answers) == n:
-            S.perfect = True
-
-
-def replay():
-    S = st.session_state
-    S.qi, S.answers, S.streak, S.celebrated = 0, {}, 0, False
-    S.run += 1
-
-
-def render_quiz(Q):
-    S = st.session_state
-    n = len(Q)
-    with st.container(border=True):
-        st.markdown("<div class='sec-title'>🕵️ Detective Challenge</div>"
-                    "<div class='sec-sub'>Test your instincts, then see what the data says. "
-                    "Answers use the full dataset (filters don't change them). +100 XP per case, "
-                    "+25 bonus on a 3-answer streak.</div>", unsafe_allow_html=True)
-        if S.qi >= n:
-            score = sum(a["ok"] for a in S.answers.values())
-            msg = ("Flawless! You read this city like a book." if score == n else
-                   "Great detective work." if score >= n * 0.6 else "Keep exploring the filters and try again.")
-            st.markdown(f"### 🏁 Case file closed: {score} / {n} correct")
-            st.progress(score / n)
-            st.success(msg)
-            if score == n and not S.celebrated:
-                S.celebrated = True
-                st.balloons()
-            if S.awarded and len(S.awarded) == n:
-                st.caption("Replaying is practice mode: XP for each case is awarded only once.")
-            st.button("🔁 Play again", on_click=replay, key="replay")
-            return
-        i = S.qi
-        q = Q[i]
-        st.progress(i / n, text=f"Case {i + 1} of {n}  ·  🔥 streak {S.streak}")
-        st.markdown(f"#### {q['q']}")
-        answered = i in S.answers
-        st.radio("Your answer", q["options"], index=None, key=f"opt_{S.run}_{i}",
-                 disabled=answered, label_visibility="collapsed")
-        if not answered:
-            st.button("🔒 Lock in answer", on_click=lock_answer, args=(i, q), key=f"lock_{S.run}_{i}")
-        else:
-            a = S.answers[i]
-            (st.success if a["ok"] else st.error)(
-                ("✅ Correct! " if a["ok"] else f"❌ Not quite. The answer is **{q['answer']}**. ") + q["why"])
-            st.button("Next case →" if i < n - 1 else "See results 🏁", on_click=next_case, args=(n,),
-                      key=f"next_{S.run}_{i}")
-
-
 # ------------------------------------------------------------------ page chrome
 CSS = """
 <style>
@@ -363,19 +178,12 @@ header[data-testid="stHeader"] {background: transparent;}
 .tip {background:#EAF2FF; color:#0F2A47; border-radius:10px; padding:8px 14px; font-size:.9rem; margin-bottom:12px;}
 .kpi {background:#fff; border:1px solid #E3EAF4; border-top:4px solid var(--accent); border-radius:12px;
    padding:10px 12px; box-shadow:0 2px 8px rgba(15,42,71,.06); height:108px; overflow:hidden;}
-.kpi-lab {font-size:.74rem; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:.4px;}
+.kpi-lab {font-size:.74rem; color:#334155; font-weight:600; text-transform:uppercase; letter-spacing:.4px;}
 .kpi-val {font-size:1.5rem; font-weight:800; color:#0F2A47; line-height:1.2; margin-top:4px; white-space:nowrap;}
-.kpi-sub {font-size:.74rem; color:#94A3B8; margin-top:2px;}
-.cap {font-size:.8rem; color:#475569; background:#F4F7FC; border-radius:8px; padding:5px 10px; margin-top:-4px; min-height:42px;}
+.kpi-sub {font-size:.74rem; color:#475569; margin-top:2px;}
+.cap {font-size:.8rem; color:#1E293B; background:#EAF2FF; border-radius:8px; padding:5px 10px; margin-top:-4px; min-height:42px;}
 .sec-title {font-size:1.3rem; font-weight:800; color:#0F2A47;}
-.sec-sub {font-size:.85rem; color:#64748B; margin-bottom:8px;}
-.player {background:linear-gradient(135deg,#0F2A47,#2F6FDE); color:#fff; border-radius:14px; padding:14px 16px;}
-.player .lvl {font-size:1.15rem; font-weight:800;}
-.xpbar {background:rgba(255,255,255,.25); border-radius:999px; height:10px; margin:8px 0 4px;}
-.xpfill {background:#FBBF24; height:10px; border-radius:999px;}
-.badges {display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px;}
-.badge {text-align:center; font-size:1.5rem; background:#F1F5F9; border-radius:10px; padding:6px 0;}
-.badge.locked {filter:grayscale(1); opacity:.35;}
+.sec-sub {font-size:.85rem; color:#475569; margin-bottom:8px;}
 </style>
 """
 
@@ -385,29 +193,7 @@ def kpi_html(icon, label, value, sub, color):
             f"<div class='kpi-val'>{value}</div><div class='kpi-sub'>{sub}</div></div>")
 
 
-def player_html(Q_n):
-    S = st.session_state
-    li = level_of(S.xp)
-    th, name, icon = LEVELS[li]
-    if li + 1 < len(LEVELS):
-        nxt = LEVELS[li + 1][0]
-        pct = (S.xp - th) / (nxt - th) * 100
-        sub = f"{S.xp} / {nxt} XP to {LEVELS[li + 1][2]} {LEVELS[li + 1][1]}"
-    else:
-        pct, sub = 100, f"{S.xp} XP · max level reached"
-    badges = badge_defs(Q_n)
-    unlocked = sum(b[3] for b in badges)
-    grid = "".join(f"<div class='badge {'' if b[3] else 'locked'}' title='{b[1]}: {b[2]}'>{b[0]}</div>"
-                   for b in badges)
-    return (f"<div class='player'><div class='lvl'>{icon} {name}</div>"
-            f"<div class='xpbar'><div class='xpfill' style='width:{pct:.0f}%'></div></div>"
-            f"<div style='font-size:.8rem;opacity:.9'>{sub}</div>"
-            f"<div style='font-size:.8rem;margin-top:8px'>🏅 Badges {unlocked}/{len(badges)}</div>"
-            f"<div class='badges'>{grid}</div></div>")
-
-
 # ================================================================== PAGE
-init_state()
 S = st.session_state
 st.markdown(CSS, unsafe_allow_html=True)
 
@@ -422,15 +208,12 @@ full = load_data(path)
 ymin, ymax = int(full["Year"].min()), int(full["Year"].max())
 total = len(full)
 
-# ---- baseline (unfiltered) results: used for deltas and the quiz
-kb, tb = get_results(path, (), (), (), (ymin, ymax), "All", "All")
-QUESTIONS = build_questions(tb, kb)
+# ---- baseline (unfiltered) results: reference for the "All data:" subtitles
+kb, _ = get_results(path, (), (), (), (ymin, ymax), "All", "All")
 
-# ---- sidebar: player card placeholder first, filters below
+# ---- sidebar filters
 with st.sidebar:
-    player_slot = st.container()
     st.markdown("### 🎛️ Filters")
-
 
 S.setdefault("f_years", (ymin, ymax))
 
@@ -454,32 +237,18 @@ with st.sidebar:
     st.caption("Filters apply to every KPI and chart. Fixed-period items (K5 = 2016, Q1 and K6 = "
                "Apr 2015-Jul 2017, Q4 = 2016) stay inside their period and combine with the Year slider.")
 
-# ---- award XP for exploring filters (once per filter)
-active = {"Primary Type": bool(types), "District": bool(districts), "Crime Category": bool(cats),
-          "Year": years != (ymin, ymax), "Arrest": arrest != "All", "Domestic": domestic != "All"}
-for name, on in active.items():
-    if on and name not in S.explored:
-        S.explored.add(name)
-        add_xp(20, f"Explored the {name} filter")
-
-# ---- badge announcements
-for ic, nm, _, got in badge_defs(len(QUESTIONS)):
-    if got and nm not in S.announced:
-        S.announced.add(nm)
-        S.toasts.append(f"{ic} Badge unlocked: {nm}")
-
 # ---- results for the current selection
 k, t = get_results(path, tuple(types), tuple(districts), tuple(cats), years, arrest, domestic)
 
 # ---- hero
-n = len(full) if k is None else k["K1 Total crimes"]
+n = total if k is None else k["K1 Total crimes"]
 st.markdown(
-    f"<div class='hero'><div><div class='hero-title'>🕵️ Chicago Crime Explorer</div>"
+    f"<div class='hero'><div><div class='hero-title'>📊 Chicago Crime Explorer</div>"
     f"<div class='hero-sub'>{total:,} recorded crimes · {full['Primary Type'].nunique()} crime types · "
-    f"{ymin}-{ymax} · explore, earn XP, solve the cases</div></div>"
+    f"{ymin}-{ymax}</div></div>"
     f"<div class='hero-pill'>Showing {n:,} of {total:,} crimes</div></div>"
-    "<div class='tip'>🎮 Use the filters to earn XP and unlock badges, then scroll down to the "
-    "<b>Detective Challenge</b>.</div>", unsafe_allow_html=True)
+    "<div class='tip'>Use the filters in the sidebar to explore the data. "
+    "Every KPI and chart updates together.</div>", unsafe_allow_html=True)
 
 if k is None:
     st.warning("No crimes match these filters. Widen the selection or press Reset filters.")
@@ -520,7 +289,8 @@ else:
                                        hovertemplate="%{x|%b %Y}: %{y:,.0f}<extra></extra>"))
             fig.add_trace(go.Scatter(x=[q1.idxmax(), q1.idxmin()], y=[q1.max(), q1.min()], mode="markers+text",
                                      marker=dict(color=AMBER, size=12), textposition=["top center", "bottom center"],
-                                     text=[f"{q1.max():,}", f"{q1.min():,}"], hoverinfo="skip"))
+                                     text=[f"{q1.max():,}", f"{q1.min():,}"], textfont=dict(color="#0F2A47", size=11),
+                                     hoverinfo="skip"))
             fig.update_xaxes(tickformat="%b %y", dtick="M3")
             fig.update_yaxes(range=[q1.min() * 0.9, q1.max() * 1.07])
             st.plotly_chart(style(fig, "Q1 · Monthly Crime Count (Apr 2015 - Jul 2017)", "Month", "Number of crimes"),
@@ -575,16 +345,17 @@ else:
         st.markdown(f"<div class='cap'>💡 {cap['q9']}</div>", unsafe_allow_html=True)
     with c10, st.container(border=True):
         m = t["Q10 Heatmap"]
+        # Dark cells need white numbers, light cells need dark numbers
+        cutoff = m.values.max() * 0.45 if m.values.sum() else 0
+        cell_colors = [["#FFFFFF" if v > cutoff else "#0F2A47" for v in row] for row in m.values]
         fig = go.Figure(go.Heatmap(z=m.values, x=list(m.columns), y=[str(i) for i in m.index],
                                    colorscale=["#FFF7E6", "#FDBA74", "#EF4444", "#7F1D1D"], showscale=False,
-                                   text=m.values, texttemplate="%{text:,}", textfont=dict(size=10),
+                                   text=m.values, texttemplate="%{text:,}",
+                                   textfont=dict(size=10, color=cell_colors),
                                    hovertemplate="%{y} %{x}: %{z:,.0f}<extra></extra>", xgap=2, ygap=2))
         fig.update_yaxes(autorange="reversed", gridcolor="rgba(0,0,0,0)")  # Monday on top
         st.plotly_chart(style(fig, "Q10 · Day × Time of Day Heat Map"), width="stretch")
         st.markdown(f"<div class='cap'>💡 {cap['q10']}</div>", unsafe_allow_html=True)
-
-# ---- challenge
-render_quiz(QUESTIONS)
 
 # ---- notes + downloads
 with st.expander("📝 Assumptions and notes"):
@@ -601,8 +372,3 @@ if k is not None:
         for name, tbl in t.items():
             tbl = tbl.to_frame() if isinstance(tbl, pd.Series) else tbl
             st.download_button(f"{name}.csv", tbl.to_csv().encode(), f"{name.replace(' ', '_')}.csv", key=f"dl_{name}")
-
-# ---- finally fill the player card and show queued toasts
-player_slot.markdown(player_html(len(QUESTIONS)), unsafe_allow_html=True)
-while S.toasts:
-    st.toast(S.toasts.pop(0))
